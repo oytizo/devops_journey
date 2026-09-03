@@ -1,0 +1,83 @@
+version: '29.7.2'
+
+networks:
+  laravel:
+    name: laravel
+
+services:
+  nginx:
+    build:
+      context: .
+      dockerfile: nginx.dockerfile
+    container_name: tuts_nginx
+    tty: true
+    depends_on:
+      - php
+      - mysql
+    ports:
+      - "8080:80"
+      - "443:443"
+    volumes:
+      - ./src:/var/www/html
+    networks:
+      - laravel
+
+  php:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: tuts_php
+    restart: unless-stopped
+    tty: true
+    volumes:
+      - ./src:/var/www/html
+    networks:
+      - laravel    
+      
+  mysql:
+    image: mysql:latest
+    container_name: tuts_mysql
+    ports:
+      - "3306:3306"
+    volumes:
+      - ./mysql:/var/lib/mysql
+    environment:
+      MYSQL_DATABASE: tuts_laravel
+      MYSQL_USER: laravel
+      MYSQL_PASSWORD: secret
+      MYSQL_ROOT_PASSWORD: secret
+    networks:
+      - laravel    
+
+  composer:
+    image: composer:latest
+    container_name: tuts_composer
+    volumes:
+      - ./src:/var/www/html
+    working_dir: /var/www/html
+    command: ["install", "--ignore-platform-reqs"]
+    depends_on:
+      - php
+    networks:
+      - laravel  
+
+  artisan:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: tuts_artisan
+    volumes:
+      # 💡 Fixed: Added a space after the dash and before the path
+      - ./src:/var/www/html
+    working_dir: /var/www/html
+    entrypoint: ["php", "artisan"]
+    networks:
+      - laravel   
+
+  adminer:
+    image: adminer:latest
+    container_name: tuts_adminer
+    ports:
+      - "8081:8080"
+    networks:
+      - laravel     
