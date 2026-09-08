@@ -70,6 +70,9 @@ jobs:
 
       - name: Run Migrations
         run: |
+          # Calculate the short SHA manually to match your build tag
+          SHORT_SHA=$(echo "${{ github.sha }}" | cut -c1-7)
+          
           docker run --rm \
             -e DB_CONNECTION=mysql \
             -e DB_HOST=${{ secrets.DB_HOST }} \
@@ -77,5 +80,5 @@ jobs:
             -e DB_DATABASE=${{ secrets.DB_DATABASE }} \
             -e DB_USERNAME=${{ secrets.DB_USERNAME }} \
             -e DB_PASSWORD=${{ secrets.DB_PASSWORD }} \
-            ghcr.io/${{ steps.string.outputs.repo }}:sha-${{ github.sha }} \
+            ghcr.io/${{ steps.string.outputs.repo }}:sha-${SHORT_SHA} \
             php artisan migrate --force
