@@ -80,5 +80,5 @@ jobs:
             -e DB_DATABASE=${{ secrets.DB_DATABASE }} \
             -e DB_USERNAME=${{ secrets.DB_USERNAME }} \
             -e DB_PASSWORD=${{ secrets.DB_PASSWORD }} \
-            ghcr.io/${{ steps.string.outputs.repo }}:sha-${SHORT_SHA} \
-            php artisan migrate --force
+             ghcr.io/${{ steps.string.outputs.repo }}:sha-${SHORT_SHA} \
+            php /var/www/html/artisan migrate --force
