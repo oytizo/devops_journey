@@ -9,6 +9,9 @@ RUN mkdir -p /var/www/html
 
 WORKDIR /var/www/html
 
+# COPY YOUR LARAVEL FILES FROM THE 'src' FOLDER INTO THE CONTAINER
+COPY ./src /var/www/html
+
 # Install required packages for Composer
 RUN apk add --no-cache curl git unzip
 
