@@ -18,6 +18,16 @@ RUN apk add --no-cache curl git unzip
 # Install Composer
 RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
 
+# 5. Run the Composer package installation natively inside the container build process
+RUN composer install \
+    --no-dev \
+    --no-interaction \
+    --prefer-dist \
+    --optimize-autoloader
+
+# 6. Adjust production file ownership settings
+RUN chown -R laravel:laravel /var/www/html/storage /var/www/html/bootstrap/cache
+
 RUN docker-php-ext-install pdo pdo_mysql \
     && apk --no-cache add libzip-dev zlib-dev libpng-dev libjpeg-turbo-dev freetype-dev \
     && docker-php-ext-configure gd --with-jpeg --with-freetype \
