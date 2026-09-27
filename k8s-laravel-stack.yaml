@@ -1,0 +1,141 @@
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: mysql-pvc
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+
+---
+---
+# 1. Database Deployment & Service (MySQL)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mysql
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mysql
+  template:
+    metadata:
+      labels:
+        app: mysql
+    spec:
+      containers:
+        - name: mysql
+          image: mysql:8.0
+          env:
+            - name: MYSQL_ROOT_PASSWORD
+              value: "secret"
+            - name: MYSQL_DATABASE
+              value: "tuts_laravel"
+            - name: MYSQL_USER
+              value: "laravel"
+            - name: MYSQL_PASSWORD
+              value: "secret"
+          ports:
+            - containerPort: 3306
+          volumeMounts:
+            - name: mysql-storage
+              mountPath: /var/lib/mysql
+      volumes:
+        - name: mysql-storage
+          persistentVolumeClaim:
+            claimName: mysql-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mysql
+spec:
+  ports:
+    - port: 3306
+  selector:
+    app: mysql
+---
+# 2. Web App Deployment (PHP + Nginx Sidecar)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: laravel-web
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: laravel-web
+  template:
+    metadata:
+      labels:
+        app: laravel-web
+    spec:
+      containers:
+        - name: php
+          image: laravel-docker-php:latest  # Uses the local image built by your compose file
+          volumeMounts:
+            - name: app-code
+              mountPath: /var/www/html
+        - name: nginx
+          image: laravel-docker-nginx:latest # Uses the local nginx image
+          ports:
+            - containerPort: 80
+          volumeMounts:
+            - name: app-code
+              mountPath: /var/www/html
+      volumes:
+        - name: app-code
+          hostPath:
+            path: /run/desktop/mnt/host/c/laravel-docker/src  # Maps your windows src directory directly
+---
+# 3. Web Service (Exposes Nginx to your browser via localhost)
+apiVersion: v1
+kind: Service
+metadata:
+  name: laravel-service
+spec:
+  type: NodePort
+  ports:
+    - protocol: TCP
+      port: 8080
+      targetPort: 80
+      nodePort: 30080   
+  selector:
+    app: laravel-web
+---
+# 4. Adminer Deployment & Service (Database GUI)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: adminer
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: adminer
+  template:
+    metadata:
+      labels:
+        app: adminer
+    spec:
+      containers:
+        - name: adminer
+          image: adminer:latest
+          ports:
+            - containerPort: 8080
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: adminer-service
+spec:
+  type: LoadBalancer
+  ports:
+    - port: 8081        # Access Adminer via localhost:8081
+      targetPort: 8080
+  selector:
+    app: adminer
